@@ -1,5 +1,21 @@
-// https://nuxt.com/docs/api/configuration/nuxt-config
+import tailwindcss from "@tailwindcss/vite";
+// import { provideSSRWidth } from '@vueuse/core'
+
 export default defineNuxtConfig({
-  compatibilityDate: '2025-07-15',
-  devtools: { enabled: true }
-})
+  // provideSSRWidth(1024, nuxtApp.vueApp)
+  modules: ["shadcn-nuxt"],
+  compatibilityDate: "2025-07-15",
+  devtools: { enabled: false },
+
+  css: ["~/assets/css/tailwind.css"],
+  vite: {
+    plugins: [tailwindcss()],
+  },
+
+  shadcn: {
+    prefix: "Ui",
+    componentDir: "~/components/ui",
+  },
+
+  ssr: false,
+});
