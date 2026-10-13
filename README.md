@@ -1,75 +1,59 @@
-# Nuxt Minimal Starter
+# RegExen
 
-Look at the [Nuxt documentation](https://nuxt.com/docs/getting-started/introduction) to learn more.
+RegExen is an open-source tool that helps devs write, test, visualize, and understand regular expressions.
 
-## Setup
+The goal is to make working with regex easier and more interactive.
 
-Make sure to install dependencies:
+## Tech Stack
+
+- Nuxt
+- Vue
+- TypeScript
+- Tailwind CSS
+
+## Getting Started
+
+### 1. Clone the repository
 
 ```bash
-# npm
-npm install
+git clone https://github.com/Ali5723/RegExen.git
+cd RegExen
+```
 
-# pnpm
+### 2. Install dependencies
+
+Make sure you have Node.js and pnpm installed.
+
+```bash
 pnpm install
-
-# yarn
-yarn install
-
-# bun
-bun install
 ```
 
-## Development Server
-
-Start the development server on `http://localhost:3000`:
+### 3. Start the development server
 
 ```bash
-# npm
-npm run dev
-
-# pnpm
 pnpm dev
-
-# yarn
-yarn dev
-
-# bun
-bun run dev
 ```
 
-## Production
+Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-Build the application for production:
+## Build for Production
 
 ```bash
-# npm
-npm run build
-
-# pnpm
 pnpm build
-
-# yarn
-yarn build
-
-# bun
-bun run build
 ```
 
-Locally preview production build:
+To preview the production build locally:
 
 ```bash
-# npm
-npm run preview
-
-# pnpm
 pnpm preview
-
-# yarn
-yarn preview
-
-# bun
-bun run preview
 ```
 
-Check out the [deployment documentation](https://nuxt.com/docs/getting-started/deployment) for more information.
+## Contributing
+
+Contributions, suggestions, and bug reports are welcome!
+
+Feel free to open an issue or submit a pull request.
+
+## License
+
+See the LICENSE file for details.
