@@ -3,13 +3,16 @@ import tailwindcss from "@tailwindcss/vite";
 
 export default defineNuxtConfig({
   // provideSSRWidth(1024, nuxtApp.vueApp)
-  modules: ["shadcn-nuxt"],
+  modules: ["shadcn-nuxt", "@nuxtjs/color-mode"],
   compatibilityDate: "2025-07-15",
   devtools: { enabled: false },
 
   css: ["~/assets/css/tailwind.css"],
   vite: {
     plugins: [tailwindcss()],
+    optimizeDeps: {
+      include: ["@lucide/vue", "clsx", "tailwind-merge", "vue-sonner"],
+    },
   },
 
   shadcn: {

@@ -1,6 +1,17 @@
+<script setup>
+import "vue-sonner/style.css";
+
+useHead({
+  titleTemplate: "RegExen",
+});
+</script>
+
 <template>
   <div>
-    <NuxtRouteAnnouncer />
-    <NuxtWelcome />
+    <NuxtLayout>
+      <NuxtPage />
+    </NuxtLayout>
+
+    <UiToaster position="top-center" />
   </div>
 </template>
