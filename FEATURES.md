@@ -4,7 +4,7 @@
 
 **Purpose:** Build a developer-focused regular expression workbench that combines testing, explanations, execution visualization, automata exploration, performance analysis, and engine compatibility.
 
-**Status:** This document describes the proposed feature set. It does not imply that every feature has been implemented.
+**Status:** This document describes the proposed feature set. It does not imply that every feature has been implemented. (DEVELOPER ONLY FILE!!)
 
 ---
 
