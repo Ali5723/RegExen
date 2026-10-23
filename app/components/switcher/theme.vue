@@ -16,11 +16,9 @@ const themes: ("light" | "dark")[] = ["light", "dark"];
 </script>
 
 <template>
-  <div
-    v-for="mainTheme in themes"
-    @click="toggleTheme"
-    v-show="theme !== mainTheme"
-  >
-    <component :is="mainTheme === 'light' ? Sun : Moon" class="size-5" />
+  <div @click="toggleTheme">
+    <div v-for="mainTheme in themes" v-show="theme !== mainTheme">
+      <component :is="mainTheme === 'light' ? Sun : Moon" class="size-5" />
+    </div>
   </div>
 </template>

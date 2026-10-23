@@ -34,6 +34,13 @@ const props = defineProps<SidebarProps>();
                 </NuxtLink>
               </UiSidebarMenuButton>
             </UiSidebarMenuItem>
+            <!-- Theme -->
+            <UiSidebarMenuItem class="hidden md:block space-y-4">
+              <UiSeparator class="w-11/12! mx-auto" />
+              <SwitcherTheme
+                class="bg-secondary flex items-center justify-center rounded-md py-1 cursor-pointer"
+              />
+            </UiSidebarMenuItem>
           </UiSidebarMenu>
         </UiSidebarGroupContent>
       </UiSidebarGroup>
