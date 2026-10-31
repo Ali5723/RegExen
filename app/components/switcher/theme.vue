@@ -1,16 +1,7 @@
 <script setup lang="ts">
 import { Moon, Sun } from "@lucide/vue";
 
-const colorMode = useColorMode();
-
-const theme = useCookie("theme", {
-  default: () => "light",
-});
-
-const toggleTheme = () => {
-  theme.value = theme.value === "dark" ? "light" : "dark";
-  colorMode.preference = theme.value;
-};
+const { theme, toggleTheme } = useTheme();
 
 const themes: ("light" | "dark")[] = ["light", "dark"];
 </script>

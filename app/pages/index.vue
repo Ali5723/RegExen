@@ -1,34 +1,7 @@
 <script setup lang="ts">
-import { CircleCheck, CircleX, Copy } from "@lucide/vue";
-import { toast } from "vue-sonner";
-
 const patternInput = ref<string>("");
 
-async function handleCopy() {
-  if (!patternInput.value) {
-    toast.error("Pattern input is empty");
-  } else {
-    try {
-      await navigator.clipboard.writeText(patternInput.value);
-      toast.info("Copied");
-    } catch {
-      toast.error("Failed to copy");
-    }
-  }
-}
-
-const flags: string[] = ["g", "i", "m", "s", "u"];
 const activatedFlags = ref<string[]>([]);
-
-function toggleFlag(pattern: string) {
-  if (activatedFlags.value.includes(pattern)) {
-    activatedFlags.value = activatedFlags.value.filter(
-      (item) => item !== pattern,
-    );
-  } else {
-    activatedFlags.value.push(pattern);
-  }
-}
 
 function isValidRegex(regexString: string) {
   if (patternInput.value === "") return false;
@@ -63,18 +36,119 @@ function matchPatternTest() {
   return testInput.value.match(mainRegex);
 }
 
+function getMatchMeta() {
+  if (!validateMatching())
+    return [] as Array<{ value: string; start: number; end: number }>;
+
+  const flags = [...new Set([...activatedFlags.value, "g"])].join("");
+  const regex = new RegExp(patternInput.value, flags);
+  const matches: Array<{ value: string; start: number; end: number }> = [];
+
+  let match: RegExpExecArray | null;
+
+  while ((match = regex.exec(testInput.value)) !== null) {
+    const value = match[0];
+    const start = match.index;
+    const end = start + value.length;
+
+    matches.push({ value, start, end });
+
+    if (value === "") {
+      regex.lastIndex += 1;
+    }
+  }
+
+  return matches;
+}
+
 const matchResults = ref<string[]>([]);
+const matchRanges = ref<Array<{ start: number; end: number }>>([]);
+
+function escapeHtml(value: string) {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/\"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+const highlightedSegments = computed(() => {
+  if (!validateMatching()) return [] as Array<{ start: number; end: number }>;
+
+  const regexString = patternInput.value;
+  const regexFlags = [...new Set([...activatedFlags.value, "g"])].join("");
+  const regex = new RegExp(regexString, regexFlags);
+  const segments: Array<{ start: number; end: number }> = [];
+
+  let match: RegExpExecArray | null;
+
+  while ((match = regex.exec(testInput.value)) !== null) {
+    const matchedText = match[0];
+
+    if (matchedText === "") {
+      regex.lastIndex += 1;
+      continue;
+    }
+
+    segments.push({
+      start: match.index,
+      end: match.index + matchedText.length,
+    });
+
+    if (match.index === regex.lastIndex) {
+      regex.lastIndex += 1;
+    }
+  }
+
+  return segments;
+});
+
+const highlightedInputHtml = computed(() => {
+  if (!testInput.value) {
+    return "<span class='text-muted-foreground/60'>Start typing in the test input to see matches.</span>";
+  }
+
+  if (highlightedSegments.value.length === 0) {
+    return escapeHtml(testInput.value).replace(/\n/g, "<br>");
+  }
+
+  const input = testInput.value;
+  let renderedHtml = "";
+  let cursor = 0;
+
+  for (const segment of highlightedSegments.value) {
+    if (segment.start > cursor) {
+      renderedHtml += escapeHtml(input.slice(cursor, segment.start));
+    }
+
+    renderedHtml += `<mark class="rounded-sm bg-amber-300/80 px-0.5 text-amber-950 shadow-[inset_0_0_0_1px_rgba(120,119,198,0.2)] dark:bg-amber-500/30 dark:text-amber-50">${escapeHtml(
+      input.slice(segment.start, segment.end),
+    )}</mark>`;
+
+    cursor = segment.end;
+  }
+
+  if (cursor < input.length) {
+    renderedHtml += escapeHtml(input.slice(cursor));
+  }
+
+  return renderedHtml.replace(/\n/g, "<br>");
+});
 
 watch(
   [patternInput, activatedFlags, testInput],
   () => {
-    // console.log(patternInput.value);
-    // console.log(activatedFlags.value);
-    // console.log(testInput.value);
-
     const result = matchPatternTest();
-    if (result !== false) matchResults.value = result ?? [];
-    else matchResults.value = [];
+    const meta = getMatchMeta();
+
+    if (result !== false) {
+      matchResults.value = result ?? [];
+    } else {
+      matchResults.value = [];
+    }
+
+    matchRanges.value = meta.map(({ start, end }) => ({ start, end }));
   },
   { deep: true },
 );
@@ -94,197 +168,138 @@ const scrollToMatchEnd = () => {
 </script>
 
 <template>
-  <div class="flex flex-col gap-6">
-    <!-- Title -->
-    <header class="space-y-1.5">
-      <h2 class="text-xl font-bold tracking-tight text-foreground sm:text-2xl">
-        Regex Tester
-      </h2>
-      <p class="text-sm leading-relaxed text-muted-foreground">
-        Write a pattern, test it against text, and see the results instantly.
-      </p>
-    </header>
+  <!-- Title -->
+  <PageTitle
+    :title="pagesList.tester.name"
+    :description="pagesList.tester.description"
+  />
 
-    <!-- Pattern Input -->
-    <UiField class="gap-2.5">
-      <div class="flex flex-wrap items-center justify-between gap-2">
-        <UiFieldLabel
-          for="pattern"
-          class="text-sm font-semibold text-foreground"
-        >
-          Pattern
-        </UiFieldLabel>
+  <!-- Pattern Input -->
+  <PatternInput v-model="patternInput" />
 
-        <UiFieldDescription class="text-xs text-muted-foreground">
-          Write without / /
-        </UiFieldDescription>
-      </div>
+  <!-- Flags Buttons -->
+  <PatternFlags v-model="activatedFlags" />
 
-      <UiInputGroup
-        class="min-h-11 border-border bg-card transition-colors focus-within:border-primary/60"
-      >
-        <UiInputGroupInput
-          id="pattern"
-          v-model="patternInput"
-          placeholder="Write a pattern"
-          aria-label="Regular expression pattern"
-          class="font-mono text-sm text-foreground placeholder:text-muted-foreground"
-        />
+  <!-- Pattern Validation -->
+  <PatternValidator :pattern-input="patternInput" />
 
-        <UiInputGroupAddon align="inline-end">
-          <UiInputGroupButton
-            aria-label="Copy pattern"
-            variant="ghost"
-            class="text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-            @click="handleCopy"
-          >
-            <Copy class="size-4" />
-          </UiInputGroupButton>
-        </UiInputGroupAddon>
-      </UiInputGroup>
-    </UiField>
+  <!-- Test Input -->
+  <UiField class="gap-2.5">
+    <UiFieldLabel for="text" class="section-title!"> Test Input </UiFieldLabel>
 
-    <!-- Flags Buttons -->
-    <div class="space-y-2">
-      <div class="flex flex-wrap items-center justify-between gap-2">
-        <span class="text-sm font-semibold text-foreground">Flags</span>
-        <span class="text-xs text-muted-foreground">
-          Select regex modifiers
-        </span>
-      </div>
-
-      <div class="flex flex-wrap gap-2">
-        <UiButton
-          v-for="item in flags"
-          :key="item"
-          type="button"
-          size="sm"
-          variant="outline"
-          :aria-label="`Toggle ${item} flag`"
-          :aria-pressed="activatedFlags.includes(item)"
-          :class="[
-            'h-9 min-w-9 rounded-lg border font-mono text-sm font-semibold transition-colors',
-            activatedFlags.includes(item)
-              ? 'border-primary/40 bg-primary/10 text-primary hover:bg-primary/15'
-              : 'border-border bg-card text-muted-foreground hover:border-primary/30 hover:bg-accent hover:text-accent-foreground',
-          ]"
-          @click="toggleFlag(item)"
-        >
-          {{ item }}
-        </UiButton>
-      </div>
-    </div>
-
-    <!-- Pattern Validation -->
-    <div
-      v-if="patternInput"
-      role="status"
-      aria-live="polite"
-      class="flex min-h-5 items-center gap-2 text-xs font-medium"
+    <UiInputGroup
+      class="overflow-hidden border-border bg-card focus-within:border-primary/60"
     >
-      <template v-if="isValidRegex(patternInput)">
-        <CircleCheck
-          class="size-4 shrink-0 text-emerald-600 dark:text-emerald-400"
-        />
-        <span class="text-emerald-700 dark:text-emerald-400">
-          Valid pattern
-        </span>
-      </template>
+      <UiInputGroupTextarea
+        id="text"
+        v-model="testInput"
+        placeholder="Write the text you want to test..."
+        aria-label="Text to test against the pattern"
+        class="min-h-32 resize-y font-mono text-sm leading-relaxed text-foreground placeholder:text-muted-foreground sm:min-h-40"
+      />
+    </UiInputGroup>
 
-      <template v-else>
-        <CircleX class="size-4 shrink-0 text-destructive" />
-        <span class="text-destructive"> Invalid pattern </span>
-      </template>
+    <div
+      v-if="testInput"
+      class="rounded-xl border border-dashed border-border bg-muted/40 p-3"
+    >
+      <div class="mb-2 flex items-center justify-between gap-2">
+        <span
+          class="text-[10px] font-medium uppercase tracking-[0.2em] text-muted-foreground"
+        >
+          Highlighted matches
+        </span>
+        <span
+          class="rounded-full border border-amber-500/25 bg-amber-500/10 px-2 py-0.5 text-[10px] font-semibold text-amber-700 dark:text-amber-300"
+        >
+          {{ highlightedSegments.length }}
+          {{ highlightedSegments.length === 1 ? "match" : "matches" }}
+        </span>
+      </div>
+
+      <pre
+        class="min-h-20 whitespace-pre-wrap wrap-break-word font-mono text-sm leading-relaxed text-foreground"
+        v-html="highlightedInputHtml"
+      />
     </div>
 
-    <!-- Test Input -->
-    <UiField class="gap-2.5">
-      <UiFieldLabel for="text" class="text-sm font-semibold text-foreground">
-        Test Input
-      </UiFieldLabel>
+    <UiFieldDescription class="text-right text-xs text-muted-foreground">
+      {{ testInputLines }} lines · {{ testInputCharacters }} characters
+    </UiFieldDescription>
+  </UiField>
 
-      <UiInputGroup
-        class="overflow-hidden border-border bg-card focus-within:border-primary/60"
+  <!-- Match Results -->
+  <UiField class="gap-3">
+    <div class="flex flex-wrap items-center justify-between gap-2">
+      <UiFieldLabel class="section-title!"> Match Results </UiFieldLabel>
+
+      <UiButton
+        type="button"
+        :disabled="matchResults.length === 0"
+        class="inline-flex items-center rounded-md border border-emerald-500/20 bg-emerald-500/10 px-2.5 py-1 text-xs font-semibold text-emerald-700 transition-colors hover:bg-emerald-500/15 disabled:cursor-default disabled:opacity-60 dark:text-emerald-400"
+        @click="scrollToMatchEnd"
       >
-        <UiInputGroupTextarea
-          id="text"
-          v-model="testInput"
-          placeholder="Write the text you want to test..."
-          aria-label="Text to test against the pattern"
-          class="min-h-32 resize-y font-mono text-sm leading-relaxed text-foreground placeholder:text-muted-foreground sm:min-h-40"
-        />
-      </UiInputGroup>
+        {{ matchResults.length }}
+        {{ matchResults.length === 1 ? "match" : "matches" }}
+      </UiButton>
+    </div>
 
-      <UiFieldDescription class="text-right text-xs text-muted-foreground">
-        {{ testInputLines }} lines · {{ testInputCharacters }} characters
-      </UiFieldDescription>
-    </UiField>
-
-    <!-- Match Results -->
-    <UiField class="gap-3">
-      <div class="flex flex-wrap items-center justify-between gap-2">
-        <UiFieldLabel class="text-sm font-semibold text-foreground">
-          Match Results
-        </UiFieldLabel>
-
-        <UiButton
-          type="button"
-          :disabled="matchResults.length === 0"
-          class="inline-flex items-center rounded-md border border-emerald-500/20 bg-emerald-500/10 px-2.5 py-1 text-xs font-semibold text-emerald-700 transition-colors hover:bg-emerald-500/15 disabled:cursor-default disabled:opacity-60 dark:text-emerald-400"
-          @click="scrollToMatchEnd"
-        >
-          {{ matchResults.length }}
-          {{ matchResults.length === 1 ? "match" : "matches" }}
-        </UiButton>
+    <div class="overflow-hidden rounded-xl border border-border bg-card">
+      <!-- Empty state -->
+      <div
+        v-if="matchResults.length === 0"
+        class="flex min-h-28 flex-col items-center justify-center gap-2 px-4 py-6 text-center"
+      >
+        <span class="text-sm font-medium text-muted-foreground">
+          No matches found
+        </span>
+        <span class="text-xs text-muted-foreground/75">
+          Try changing your pattern or test input.
+        </span>
       </div>
 
-      <div class="overflow-hidden rounded-xl border border-border bg-card">
-        <!-- Empty state -->
-        <div
-          v-if="matchResults.length === 0"
-          class="flex min-h-28 flex-col items-center justify-center gap-2 px-4 py-6 text-center"
-        >
-          <span class="text-sm font-medium text-muted-foreground">
-            No matches found
-          </span>
-          <span class="text-xs text-muted-foreground/75">
-            Try changing your pattern or test input.
-          </span>
-        </div>
+      <!-- Match list -->
 
-        <!-- Match list -->
-
-        <UiScrollArea class="h-80 w-full">
-          <ul class="divide-y divide-border">
-            <li
-              v-for="(item, index) in matchResults"
-              :key="index"
-              :ref="
-                index + 1 === matchResults.length
-                  ? setMatchEndElement
-                  : undefined
-              "
-              class="group flex items-start gap-3 px-3 py-3 transition-colors hover:bg-accent/60 sm:px-4"
+      <UiScrollArea class="h-80 w-full">
+        <ul class="divide-y divide-border">
+          <li
+            v-for="(item, index) in matchResults"
+            :key="index"
+            :ref="
+              index + 1 === matchResults.length ? setMatchEndElement : undefined
+            "
+            class="group flex items-start gap-3 px-3 py-3 transition-colors hover:bg-accent/60 sm:px-4"
+          >
+            <span
+              class="flex size-6 shrink-0 items-center justify-center rounded-md bg-primary/10 font-mono text-xs font-semibold text-primary"
             >
-              <span
-                class="flex size-6 shrink-0 items-center justify-center rounded-md bg-primary/10 font-mono text-xs font-semibold text-primary"
-              >
-                {{ index + 1 }}
-              </span>
+              {{ index + 1 }}
+            </span>
 
-              <code
-                class="min-w-0 flex-1 break-all font-mono text-sm leading-6 text-foreground"
-              >
-                {{
-                  item === "" || item === " " || item === "\n"
-                    ? "[empty]"
-                    : item
-                }}
-              </code>
-            </li>
-          </ul>
-        </UiScrollArea>
-      </div>
-    </UiField>
-  </div>
+            <div class="min-w-0 flex-1">
+              <div class="flex items-start justify-between gap-3">
+                <code
+                  class="min-w-0 flex-1 break-all font-mono text-sm leading-6 text-foreground"
+                >
+                  {{
+                    item === "" || item === " " || item === "\n"
+                      ? "[empty]"
+                      : item
+                  }}
+                </code>
+
+                <span
+                  class="shrink-0 rounded-md border border-border bg-muted/60 px-1.5 py-0.5 font-mono text-[10px] font-medium text-muted-foreground"
+                >
+                  chars {{ matchRanges[index]?.start ?? 0 }}-{{
+                    matchRanges[index]?.end ?? 0
+                  }}
+                </span>
+              </div>
+            </div>
+          </li>
+        </ul>
+      </UiScrollArea>
+    </div>
+  </UiField>
 </template>
