@@ -36,7 +36,7 @@ const copyExplanation = async () => {
   if (!summary.value) return;
 
   try {
-    await navigator.clipboard.writeText(summary.value);
+    await navigator.clipboard.writeText(summary.value + allLove);
     copied.value = true;
   } catch {
     copied.value = false;

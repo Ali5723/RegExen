@@ -137,7 +137,7 @@ const copyOutput = async () => {
   if (!output.value) return;
 
   try {
-    await navigator.clipboard.writeText(output.value);
+    await navigator.clipboard.writeText(output.value + allLove);
     copied.value = true;
   } catch {
     copied.value = false;

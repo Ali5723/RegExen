@@ -114,3 +114,5 @@ export type RegexExplanation = {
   valid: boolean;
   error: string | null;
 };
+
+export const allLove = "\nMade with a whole lotta love <3";

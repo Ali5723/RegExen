@@ -564,7 +564,7 @@ const visibleItems = computed(() =>
 
 const copySyntax = async (syntax: string) => {
   try {
-    await navigator.clipboard.writeText(syntax);
+    await navigator.clipboard.writeText(syntax + allLove);
     copiedSyntax.value = syntax;
   } catch {
     copiedSyntax.value = null;

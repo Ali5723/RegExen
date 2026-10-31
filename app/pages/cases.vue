@@ -325,7 +325,7 @@ const copyResults = async () => {
     .join("\n\n");
 
   try {
-    await navigator.clipboard.writeText(summary);
+    await navigator.clipboard.writeText(summary + allLove);
     copied.value = true;
   } catch {
     copied.value = false;
